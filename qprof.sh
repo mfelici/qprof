@@ -1,33 +1,28 @@
 #!/bin/bash
 
 #--------------------------------------------------------------------------
-# qprof version 0.5a - Dec 2022 - maurizio.felici@vertica.com
+# qprof version 0.5b - Feb 2023 - maurizio.felici@vertica.com
 # vim: et:ts=4:sw=4:sm:ai
 #--------------------------------------------------------------------------
 
 #---------------------------------------------------------------------------
 # Setting Default Values
 #---------------------------------------------------------------------------
-QPV="qprof version 0.5a - Dec 2022"
+QPV="qprof version 0.5b - Feb 2023"
 OUT=qprof.out
 CLC=0
 GZP=0
 RPOOL=""
+VSQL=vsql
 usage="Usage: qprof {-f query_file | -s statement_id -t transaction_id} [-o output_file] [-rp resource_pool] [-cc] [-gz]\n"
 usage+=" -f query_file (it should not contain the 'profile' keyword\n"
 usage+=" -s statement_id -t transaction_id is alternative to '-f file'\n"
 usage+=" -o  output_file to set the output file (default sprof.out)\n"
 usage+=" -rp resource_pool to set the resource pool where the query in '-f file' is executed\n"
 usage+=" -gz to gzip the output file\n"
-usage+=" -cc to clear the cache"
-
-#---------------------------------------------------------------------------
-# Check user has dbadmin role
-#---------------------------------------------------------------------------
-if [ $(vsql -X -A -t -q -c "SELECT has_role('dbadmin')") == 'f' ] ; then
-    echo "User has no dbadmin role"
-    exit 1
-fi
+usage+=" -cc to clear the cache\n"
+usage+=" -u user (overwrites VSQL_USER)\n"
+usage+=" -p passwd (overwrites VSQL_PASSWORD)"
 
 #---------------------------------------------------------------------------
 # Command line options handling
@@ -56,6 +51,14 @@ while [ $# -gt 0 ]; do
             test ! -f ${SQL} && { echo Cannot read ${SQL} ; exit 1 ; }
             shift 2
             ;;
+        "-u")
+            VSQL+=" -U $2"
+            shift 2
+            ;;
+        "-p")
+            VSQL+=" -w $2"
+            shift 2
+            ;;
         "-cc")
             CLC=1
             shift
@@ -77,18 +80,31 @@ while [ $# -gt 0 ]; do
 done
 
 #---------------------------------------------------------------------------
+# Check user can connect
+#---------------------------------------------------------------------------
+${VSQL} -c "\q" || { exit 1 ; }
+
+#---------------------------------------------------------------------------
+# Check user has dbadmin role
+#---------------------------------------------------------------------------
+if [ $(${VSQL} -X -A -t -q -c "SELECT has_role('dbadmin')") == 'f' ] ; then
+    echo "User has no dbadmin role"
+    exit 1
+fi
+
+#---------------------------------------------------------------------------
 # Running Query (output to /dev/null) if any...
 #---------------------------------------------------------------------------
 if [ ${CLC} -eq 1 ] ; then
     echo "[qprof] Clear Linux cache..."
     sudo sh -c "sync && echo 3 > /proc/sys/vm/drop_caches"
     echo "[qprof] Clear Vertica Internal cache..."
-    vsql -X -A -q -f - -o /dev/null -c "SELECT CLEAR_CACHES()"
+    ${VSQL} -X -A -q -f - -o /dev/null -c "SELECT CLEAR_CACHES()"
 fi
 if [ ! -z ${SQL+x} ] ; then
     echo "[qprof] Running query $SQL (result set redirected to /dev/null)"
     trxst=$(sed "1s/^/${RPOOL} PROFILE /" ${SQL} | 
-            vsql -X -A -q -f - -o /dev/null 2>&1 | 
+            ${VSQL} -X -A -q -f - -o /dev/null 2>&1 | 
             sed -n 's/^HINT:.*=\([0-9]*\).*=\([0-9]*\);$/\1,\2/p' |
             tail -n1 )  # to get the last line (second execution if replanned)
     if [ -z "${trxst}" ] ; then
@@ -108,7 +124,7 @@ fi
 # Running profile analysis
 #---------------------------------------------------------------------------
 echo "[qprof] Analyzing query profile. Output to ${OUT}"
-cat <<-EOF | vsql -X -q -P null='(null)' -o ${OUT} -f -
+cat <<-EOF | ${VSQL} -X -q -P null='(null)' -o ${OUT} -f -
     \set trxid $TID
     \set stmtid $SID
     \set qpv "${QPV}"
@@ -620,7 +636,7 @@ cat <<-EOF | vsql -X -q -P null='(null)' -o ${OUT} -f -
     \qecho >>> Step 21: Getting Projection Definition and Statistics
 EOF
 
-while read p; do vsql -AtXqn -f - <<-IOF
+while read p; do ${VSQL} -AtXqn -f - <<-IOF
     SELECT export_objects('','${p}') ;
     \pset format aligned
     \pset null '(null)'
@@ -640,7 +656,7 @@ while read p; do vsql -AtXqn -f - <<-IOF
         table_name = SPLIT_PARTB('${p}', '.', 2)
     ;
 IOF
-done >> ${OUT} < <( cat <<-EOF | vsql -A -t -X -q -f -
+done >> ${OUT} < <( cat <<-EOF | ${VSQL} -A -t -X -q -f -
     \set trxid $TID
     \set stmtid $SID
     SELECT

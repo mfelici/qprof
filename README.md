@@ -29,6 +29,8 @@ Be sure to set the correct ``vsql`` environment using the following variables:
 - ``-rp resource_pool`` to set the resource pool used to run the query (default NONE - query will be executed using the standard resource pool for dbadmin)
 - `-cc`` to clear Linux ad Vertica caches before running the query (default OFF)
 - ``-t transaction_id -s statement_id`` in case the query was profiled before running QPROF. This option is alternative to ``-f script_file``
+- ``-u user`` to define Vertica user (default $VSQL_USER)
+- ``-p password`` to define Vertica password (default $VSQL_PASSWORD)
 
 ### Examples
 **Quick and easy way**. Will profile the execution of the statement in ``query.sql`` and save the output in ``qprof.out``:
