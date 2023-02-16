@@ -14,10 +14,10 @@ Just copy ``qprof`` somewhere on your system and make it executable (``chmod u+x
 
 ## How to use QPROF
 ### Before using QPROF
-Be sure to set the correct ``vsql`` environment using the following variables:
+You might want to set the following ``vsql`` environment variables:
 
-- ``VSQL_USER``. **Please Note** user must have dbadmin ROLE to run ``qprof``
-- ``VSQL_PASSWORD``
+- ``VSQL_USER``. If you specify the ``-u user`` option (see below) the value in this variable will be ignored
+- ``VSQL_PASSWORD``. If you specify the ``-p password`` option (see below) the value in this variable will be ignored
 - ``VSQL_HOST``
 - ``VSQL_DATABASE``
 - ``VSQL_PORT``

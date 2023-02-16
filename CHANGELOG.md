@@ -1,3 +1,7 @@
+# qprof - Version 0.5c (16 Feb 2023)
+
+* removed dependencies from ``dbadmin`` role
+
 # qprof - Version 0.5b (15 Feb 2023)
 
 * new options (-u/-p) to set user/password. If set
