@@ -83,8 +83,9 @@ $ ./qprof-0.5a.sh -f q.sql
     Step 17: Query execution profile counters extraction in CSV format
     Step 18: Getting Vertica non-default configuration parameters
     Step 19: Getting RP configuration
-    Step 20: Getting Cluster configuration
-    Step 21: Getting Projection Definition and Statistics
+    Step 20: Getting RP configuration
+    Step 21: Getting Cluster configuration
+    Step 22: Getting Projection Definition and Statistics
 ```
 ### Warning
 When we ask ``qprof`` to profile the query  with ``-f script_file`` the **result set in output** will be redirected to ``/dev/null`` **of the system where qprof is executed**.

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #--------------------------------------------------------------------------
-# qprof version 0.5c - Feb 2023 - maurizio.felici@vertica.com
+# qprof version 0.5d - Apr 2023 - maurizio.felici@vertica.com
 # vim: et:ts=4:sw=4:sm:ai
 #--------------------------------------------------------------------------
 
@@ -610,11 +610,24 @@ cat <<-EOF | ${VSQL} -X -q -P null='(null)' -o ${OUT} -f -
     \pset expanded
 
     -- ------------------------------------------------------------------------
+    -- Getting RP status
+    -- ------------------------------------------------------------------------
+    \pset expanded
+    \echo '    Step 20: Getting RP status'
+    \qecho >>> Step 20: Getting RP status
+    SELECT
+        *
+    FROM
+        v_monitor.resource_pool_status
+    ;
+    \pset expanded
+
+    -- ------------------------------------------------------------------------
     -- Getting Cluster configuration
     -- ------------------------------------------------------------------------
     \pset expanded
-    \echo '    Step 20: Getting Cluster configuration'
-    \qecho >>> Step 20: Getting Cluster configuration
+    \echo '    Step 21: Getting Cluster configuration'
+    \qecho >>> Step 21: Getting Cluster configuration
     SELECT
         *
     FROM
@@ -624,8 +637,8 @@ cat <<-EOF | ${VSQL} -X -q -P null='(null)' -o ${OUT} -f -
     -- ------------------------------------------------------------------------
     -- Getting Projection Definition
     -- ------------------------------------------------------------------------
-    \echo '    Step 21: Getting Projection Definition and Statistics'
-    \qecho >>> Step 21: Getting Projection Definition and Statistics
+    \echo '    Step 22: Getting Projection Definition and Statistics'
+    \qecho >>> Step 22: Getting Projection Definition and Statistics
 EOF
 
 while read p; do ${VSQL} -AtXqn -f - <<-IOF

@@ -1,3 +1,7 @@
+# qprof - Version 0.5d (13 Apr 2023)
+
+* qprof now retrieves resource_pool_status info
+
 # qprof - Version 0.5c (16 Feb 2023)
 
 * removed dependencies from ``dbadmin`` role
