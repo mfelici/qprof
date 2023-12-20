@@ -495,52 +495,23 @@ cat <<-EOF | ${VSQL} -X -q -P null='(null)' -o ${OUT} -f -
     -- ------------------------------------------------------------------------
     \echo '    Step 16: Projection Data Distribution'
     \qecho >>> Step 16: Projection Data Distribution
-    SELECT
-        p.anchor_table_schema || '.' || p.anchor_table_name AS table_name,
-        s.projection_name,
-        s.node_name,
-        SUM(s.row_count) AS row_count, 
-        SUM(s.used_bytes) AS used_bytes,
-        SUM(s.ros_count) AS ROS_count,
-        SUM(sc.deleted_row_count) AS del_rows,
-        SUM(sc.delete_vector_count) AS DV_count
-    FROM
-        v_monitor.projection_storage s
-        INNER JOIN v_monitor.projection_usage p
-          ON s.projection_id = p.projection_id
-        INNER JOIN v_monitor.storage_containers sc
-          ON s.projection_id = sc.projection_id
-        INNER JOIN v_catalog.projections pj
-          ON s.projection_id = pj.projection_id
-    WHERE
-        p.statement_id=:stmtid AND
-        p.transaction_id=:trxid AND
-        pj.is_segmented IS true
-    GROUP BY 1, 2, 3
-    UNION ALL
-    SELECT
-        DISTINCT 
-            p.anchor_table_schema || '.' || p.anchor_table_name AS table_name,
-            s.projection_name,
-            'all (unsegmented)' AS node_name,
-            s.row_count AS row_count, 
-            s.used_bytes AS used_bytes,
-            s.ros_count AS ROS_count,
-            sc.deleted_row_count AS del_rows,
-            sc.delete_vector_count AS DV_count
-    FROM
-        v_monitor.projection_usage p
-        INNER JOIN v_monitor.projection_storage s
-          ON s.projection_id = p.projection_id 
-        INNER JOIN v_monitor.storage_containers sc
-          ON sc.projection_id = p.projection_id
-        INNER JOIN v_catalog.projections pj
-          ON pj.projection_id = p.projection_id
-    WHERE
-        p.statement_id=:stmtid AND
-        p.transaction_id=:trxid AND
-        pj.is_segmented IS false
-    ORDER BY 1, 2, 3
+      select max(p.anchor_table_schema || '.' || p.anchor_table_name) as table_name
+           , max(c.projection_name)       as projection_name
+           , case when max(j.is_segmented) then c.node_name else 'all (unsegmented' end as node_name
+           , sum(c.total_row_count)       as row_count
+           , sum(c.used_bytes)            as used_bytes
+           , count(c.storage_oid)         as ROS_count
+           , sum(c.deleted_row_count)     as del_rows
+           , sum(c.delete_vector_count)   as DV_count
+        from v_monitor.projection_usage   as p
+        join v_catalog.projections        as j on j.projection_id = p.projection_id
+        join v_monitor.storage_containers as c on c.projection_id = j.projection_id and c.node_name = case when j.is_segmented then c.node_name else j.node_name end 
+       where p.statement_id   = :stmtid
+         and p.transaction_id = :trxid
+    group by p.projection_id
+           , c.node_name
+       limit 1 over(partition by p.projection_id, case when max(j.is_segmented) then c.node_name else 'all (unsegmented' end order by c.node_name asc)
+    order by 1, 2, 3
     ;
     \qecho Please note:
     \qecho DVC = Delete Vector Count
