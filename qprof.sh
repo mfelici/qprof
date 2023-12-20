@@ -497,7 +497,7 @@ cat <<-EOF | ${VSQL} -X -q -P null='(null)' -o ${OUT} -f -
     \qecho >>> Step 16: Projection Data Distribution
       select max(p.anchor_table_schema || '.' || p.anchor_table_name) as table_name
            , max(c.projection_name)       as projection_name
-           , case when max(j.is_segmented) then c.node_name else 'all (unsegmented' end as node_name
+           , case when max(j.is_segmented) then c.node_name else 'all (unsegmented)' end as node_name
            , sum(c.total_row_count)       as row_count
            , sum(c.used_bytes)            as used_bytes
            , count(c.storage_oid)         as ROS_count
@@ -510,7 +510,7 @@ cat <<-EOF | ${VSQL} -X -q -P null='(null)' -o ${OUT} -f -
          and p.transaction_id = :trxid
     group by p.projection_id
            , c.node_name
-       limit 1 over(partition by p.projection_id, case when max(j.is_segmented) then c.node_name else 'all (unsegmented' end order by c.node_name asc)
+       limit 1 over(partition by p.projection_id, case when max(j.is_segmented) then c.node_name else 'all (unsegmented)' end order by c.node_name asc)
     order by 1, 2, 3
     ;
     \qecho Please note:
