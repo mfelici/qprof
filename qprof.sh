@@ -511,7 +511,6 @@ cat <<-EOF | ${VSQL} -X -q -P null='(null)' -o ${OUT} -f -
     group by p.projection_id
            , c.node_name
        limit 1 over(partition by p.projection_id, case when max(j.is_segmented) then c.node_name else 'all (unsegmented)' end order by c.node_name asc)
-    order by 1, 2, 3
     ;
     \qecho Please note:
     \qecho DVC = Delete Vector Count
